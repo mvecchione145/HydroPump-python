@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "hydropump"
+version = "0.1.0"
+description = "Configuration Management Library"
+authors = ["Michael Vecchione <51305946+mvecchione145@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyyaml = "^6.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
