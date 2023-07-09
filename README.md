@@ -1,3 +1,5 @@
+[![Contributor Covenant](https://img.shields.io/badge/Contributor)]
+
 # HydroPump-python
 Configuration Management Library
 
@@ -107,4 +109,4 @@ HydroPump is released under the [MIT License](LICENSE).
 
 ---
 
-Thank you for using HydroPump! We hope it helps simplify your configuration management process. If you have any questions or need further assistance, feel free to reach out to us at [support@hydropump.com](mailto:support@hydropump.com).
+Thank you for using HydroPump! We hope it helps simplify your configuration management process. If you have any questions or need further assistance, feel free to reach out to us at ~~[support@hydropump.com](mailto:support@hydropump.com)~~.
