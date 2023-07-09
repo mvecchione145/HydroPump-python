@@ -23,5 +23,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest]
 testpaths = [
-    "test"
+    "hydropump/test"
 ]
+
+[tool.isort]
+profile = "black"
