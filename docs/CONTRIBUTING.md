@@ -4,7 +4,7 @@ Thank you for considering contributing to HydroPump! We appreciate your interest
 
 ## Code of Conduct
 
-We have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a welcoming and inclusive community. By participating in this project, you are expected to uphold this code. Please make sure to read and understand it before contributing.
+We have adopted a [Code of Conduct](docs/CODE_OF_CONDUCT.md) to ensure a welcoming and inclusive community. By participating in this project, you are expected to uphold this code. Please make sure to read and understand it before contributing.
 
 ## Ways to Contribute
 

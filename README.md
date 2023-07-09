@@ -101,7 +101,7 @@ print(returned_payload)
 
 Contributions to HydroPump are welcome! If you find any issues or have suggestions for improvement, please open an issue on the [GitHub repository](https://github.com/your-username/hydropump). Pull requests are also appreciated.
 
-Please make sure to follow the [contribution guidelines](CONTRIBUTING.md) when submitting your contributions.
+Please make sure to follow the [contribution guidelines](docs/CONTRIBUTING.md) when submitting your contributions.
 
 ## License
 
