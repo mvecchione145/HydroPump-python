@@ -6,6 +6,7 @@ authors = ["Michael Vecchione <51305946+mvecchione145@users.noreply.github.com>"
 license = "MIT"
 readme = "README.md"
 
+
 [tool.poetry.dependencies]
 python = "^3.10"
 pyyaml = "^6.0"
@@ -17,14 +18,22 @@ black = "^23.3.0"
 isort = "^5.12.0"
 flake8 = "^6.0.0"
 
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[project.urls]
+"Homepage" = "https://github.com/mvecchione145/HydroPump-python"
+"Bug Tracker" = "https://github.com/mvecchione145/HydroPump-python/issues"
+
 
 [tool.pytest]
 testpaths = [
     "hydropump/test"
 ]
+
 
 [tool.isort]
 profile = "black"
