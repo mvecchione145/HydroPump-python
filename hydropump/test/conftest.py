@@ -3,8 +3,6 @@ from uuid import uuid4
 
 import pytest
 
-from hydropump import FileSystemBackend, Instruction, Service
-
 
 @pytest.fixture(scope="session")
 def example_id():
@@ -12,5 +10,10 @@ def example_id():
 
 
 @pytest.fixture(scope="session")
-def example_instruction(example_id):
-    return {"system": "darwin", "create_date": str(datetime.now())}
+def example_source():
+    return {"system": "darwin", "zone": "us-east1-a"}
+
+
+@pytest.fixture(scope="session")
+def example_metadata():
+    return {"createdAt": str(datetime.now()), "createdBy": "mvecchione145"}

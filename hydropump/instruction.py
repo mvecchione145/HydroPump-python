@@ -1,7 +1,6 @@
 from typing import Optional
 from uuid import uuid4
-
-from .compiler import Compiler
+from datetime import datetime
 
 
 class Instruction(dict):
@@ -22,7 +21,8 @@ class Instruction(dict):
         self,
         instruction_id: Optional[str] = None,
         metadata: Optional[dict] = None,
-        payload: Optional[dict] = None,
+        source: Optional[dict] = None,
+        debug: Optional[bool] = False,
     ) -> None:
         """
         Initializes a new instance of the RawInstruction class.
@@ -31,20 +31,35 @@ class Instruction(dict):
         - instruction_id (Optional[str]): An optional parameter specifying the ID of the instruction.
           If not provided, a unique ID will be generated using the uuid4() function.
         - metadata (Optional[dict]): An optional parameter specifying the metadata of the instruction.
-        - payload (Optional[dict]): An optional parameter specifying the payload of the instruction.
+        - source (Optional[dict]): An optional parameter specifying the payload of the instruction.
+        - debug (Optional[bool]): An optional parameter that will not compile on initialization.
 
         Returns:
         - None
         """
         self.instruction_id = instruction_id or str(uuid4())
         self.metadata = metadata
+        self.source = source
         if self.metadata is None:
             self.metadata = {}
-        if payload is None:
-            payload = {}
-        super().__init__(payload)
+        self.metadata.update({"compiled": False})
+        if self.source is None:
+            self.source = {}
+        super().__init__({"metadata": self.metadata, "rawSource": self.source})
+        if not debug:
+            self.compile()
 
-    def compile(self, compiler: Optional[Compiler] = None) -> None:
-        if compiler is None:
-            compiler = Compiler
-        super().__init__(compiler.compile(self))
+    def update_instruction(
+        self, metadata: Optional[dict] = None, source: Optional[dict] = None
+    ) -> None:
+        if metadata is not None:
+            self.metadata = metadata
+        if source is not None:
+            self.source = source
+        self.metadata.update({"modifiedAt": str(datetime.now())})
+        super().__init__({"metadata": self.metadata, "rawSource": self.source})
+
+    def compile(self) -> None:
+        for template in self.metadata.get("templates", []):
+            pass
+        self.metadata.update({"compiled": True})

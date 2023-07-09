@@ -13,7 +13,9 @@ class Service:
       If not provided, a default FileSystemBackend instance will be used.
     """
 
-    def __init__(self, backend: Optional[Backend] = None) -> None:
+    def __init__(
+        self, backend: Optional[Backend] = None, backend_config: dict = None
+    ) -> None:
         """
         Initializes a new instance of the Service class.
 
@@ -25,7 +27,7 @@ class Service:
         - ValueError: If the provided backend is not of type Backend.
         """
         self.backend = backend
-        if self.backend is None:
+        if self.backend is None and backend_config is None:
             self.backend = FileSystemBackend()
         if not isinstance(self.backend, Backend):
             raise ValueError("Backend is not of type Backend.")
@@ -40,11 +42,10 @@ class Service:
         Returns:
         - Instruction: An Instruction object representing the retrieved instruction.
         """
-        payload = self.backend.get_contents(instruction_id=instruction_id)
-        return Instruction(instruction_id=instruction_id, payload=payload)
+        return self.backend.get_base(instruction_id=instruction_id)
 
     def create_instruction(
-        self, payload: dict, instruction_id: Optional[str] = None
+        self, metadata: dict, source: dict, instruction_id: Optional[str] = None
     ) -> Instruction:
         """
         Creates a new instruction in the backend with the specified payload and instruction ID.
@@ -57,10 +58,17 @@ class Service:
         Returns:
         - Instruction: the created Instruction object.
         """
-        instruction = Instruction(instruction_id=instruction_id, payload=payload)
-        return self.backend.put_contents(instruction=instruction)
+        instruction = Instruction(
+            instruction_id=instruction_id, metadata=metadata, source=source
+        )
+        return self.backend.put_base(instruction=instruction)
 
-    def update_instruction(self, instruction_id: str, payload: dict) -> Instruction:
+    def update_instruction(
+        self,
+        instruction_id: str,
+        metadata: Optional[dict] = None,
+        source: Optional[dict] = None,
+    ) -> Instruction:
         """
         Updates an existing instruction in the backend with the specified payload.
 
@@ -71,8 +79,9 @@ class Service:
         Returns:
         - Instruction: the updated Instruction object.
         """
-        instruction = Instruction(instruction_id=instruction_id, payload=payload)
-        return self.backend.put_contents(instruction=instruction)
+        instruction = self.backend.get_base(instruction_id=instruction_id)
+        instruction.update_instruction(metadata=metadata, source=source)
+        return self.backend.put_base(instruction=instruction)
 
     def delete_instruction(self, instruction_id: str) -> None:
         """
@@ -84,4 +93,4 @@ class Service:
         Returns:
         - None
         """
-        self.backend.delete_contents(instruction_id=instruction_id)
+        self.backend.delete_base(instruction_id=instruction_id)

@@ -10,6 +10,11 @@ import yaml
 from .instruction import Instruction
 
 
+class InstructionType(Enum):
+    template = "template"
+    base = "base"
+
+
 class SupportedFileExtensions(Enum):
     """
     An enumeration representing supported file extensions.
@@ -65,23 +70,44 @@ class Backend(ABC):
             self.dump = yaml.safe_dump
 
     @abstractmethod
-    def get_contents(self) -> None:
+    def get_template(self) -> None:
         """
-        Abstract method to get the contents from the backend.
-        """
-        pass
-
-    @abstractmethod
-    def put_contents(self) -> None:
-        """
-        Abstract method to put the contents into the backend.
+        Abstract method to get the template from the backend.
         """
         pass
 
     @abstractmethod
-    def delete_contents(self) -> None:
+    def get_base(self) -> None:
         """
-        Abstract method to delete the contents from the backend.
+        Abstract method to get the base from the backend.
+        """
+        pass
+
+    @abstractmethod
+    def put_template(self) -> None:
+        """
+        Abstract method to put the template into the backend.
+        """
+        pass
+
+    @abstractmethod
+    def put_base(self) -> None:
+        """
+        Abstract method to put the base into the backend.
+        """
+        pass
+
+    @abstractmethod
+    def delete_template(self) -> None:
+        """
+        Abstract method to delete the template from the backend.
+        """
+        pass
+
+    @abstractmethod
+    def delete_base(self) -> None:
+        """
+        Abstract method to delete the base from the backend.
         """
         pass
 
@@ -119,22 +145,42 @@ class FileSystemBackend(Backend):
                 "Root Directory must exist for FileSystemBackend to initialize"
             )
         super().__init__(backend_type="FileSystem", file_extension=file_extension)
+        self._set_sub_directories()
 
-    def _get_path(self, instruction_id: str) -> Path:
+    def _set_sub_directories(self):
+        base_path = Path(self.root_directory, "base")
+        template_path = Path(self.root_directory, "template")
+        if not base_path.exists():
+            os.mkdir(base_path)
+        if not template_path.exists():
+            os.mkdir(template_path)
+
+    def _get_path(self, identifier: str, object_type: InstructionType) -> Path:
         """
-        Returns the path for a given instruction ID.
+        Returns the path for a given identifier.
 
         Parameters:
         - instruction_id (str): The ID of the instruction.
+        - object_type (InstructionType): Will generate a prefix based on object_type.
 
         Returns:
         - Path: The path to the instruction file.
         """
+        object_type = InstructionType(object_type)
         return Path(
-            self.root_directory, f"{instruction_id}.{self.file_extension.value}"
+            self.root_directory,
+            object_type.value,
+            f"{identifier}.{self.file_extension.value}",
         )
 
-    def get_contents(self, instruction_id: str) -> Instruction:
+    def get_template(self, template_id: str) -> dict:
+        path = self._get_path(identifier=template_id, object_type="template")
+        if not path.exists():
+            raise FileNotFoundError(f"template ({template_id}) not found in backend.")
+        with open(path) as f:
+            return self.load(f)
+
+    def get_base(self, instruction_id: str) -> Instruction:
         """
         Retrieves the contents of an instruction.
 
@@ -147,20 +193,34 @@ class FileSystemBackend(Backend):
         Returns:
         - Instruction: The instruction object given instruction_id.
         """
-        path = self._get_path(instruction_id=instruction_id)
+        path = self._get_path(identifier=instruction_id, object_type="base")
         if not path.exists():
-            raise FileNotFoundError(
-                f"instruction_id ({instruction_id}) not found in backend."
-            )
+            raise FileNotFoundError(f"base ({instruction_id}) not found in backend.")
         with open(path) as f:
             payload = self.load(f)
-        return Instruction(instruction_id=instruction_id, payload=payload)
+        return Instruction(
+            instruction_id=instruction_id,
+            metadata=payload.get("metadata", {}),
+            source=payload.get("rawSource", {}),
+        )
 
-    def put_contents(
+    def put_template(
+        self,
+        payload: dict,
+        template_id: str,
+    ) -> None:
+        path = self._get_path(identifier=template_id, object_type="template")
+        if path.exists():
+            os.remove(path)
+        with open(path, "w") as f:
+            self.dump(payload, f)
+
+    def put_base(
         self,
         instruction: Optional[Instruction] = None,
         instruction_id: Optional[str] = None,
-        payload: Optional[dict] = None,
+        metadata: Optional[dict] = None,
+        source: Optional[dict] = None,
     ) -> Instruction:
         """
         Puts the contents of an instruction into a file.
@@ -168,7 +228,8 @@ class FileSystemBackend(Backend):
         Parameters:
         - instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
         - instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
-        - payload (Optional[dict], optional): The payload of the instruction. Defaults to None.
+        - metadata (Optional[dict], optional): The metadata of the instruction. Defaults to None.
+        - source (Optional[dict], optional): The payload of the instruction. Defaults to None.
 
         Raises:
         - ValueError: If either instruction or instruction_id is not provided.
@@ -179,17 +240,28 @@ class FileSystemBackend(Backend):
         if instruction is None and instruction_id is None:
             raise ValueError("Need either instruction_id or instruction to identify.")
         instruction_id = instruction_id or instruction.instruction_id
-        payload = payload or instruction
+        source = source or instruction.source
+        metadata = metadata or instruction.metadata
         if instruction is None:
-            instruction = Instruction(instruction_id=instruction_id, payload=payload)
-        path = self._get_path(instruction_id=instruction_id)
+            instruction = Instruction(
+                instruction_id=instruction_id, metadata=metadata, source=source
+            )
+        path = self._get_path(identifier=instruction_id, object_type="base")
         if path.exists():
             os.remove(path)
         with open(path, "w") as f:
-            self.dump(payload, f)
+            self.dump(instruction, f)
         return instruction
 
-    def delete_contents(
+    def delete_template(
+        self,
+        template_id: str,
+    ) -> None:
+        path = self._get_path(identifier=template_id, object_type="template")
+        if path.exists():
+            os.remove(path)
+
+    def delete_base(
         self,
         instruction: Optional[Instruction] = None,
         instruction_id: Optional[str] = None,
@@ -207,6 +279,6 @@ class FileSystemBackend(Backend):
         if instruction is None and instruction_id is None:
             raise ValueError("Need either instruction_id or instruction to identify.")
         instruction_id = instruction_id or instruction.instruction_id
-        path = self._get_path(instruction_id=instruction_id)
+        path = self._get_path(identifier=instruction_id, object_type="base")
         if path.exists():
             os.remove(path)
