@@ -1,0 +1,3 @@
+[flake8]
+exclude = .direnv,__pycache__
+max-complexity = 10
