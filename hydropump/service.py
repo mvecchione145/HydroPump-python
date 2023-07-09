@@ -45,7 +45,7 @@ class Service:
 
     def create_instruction(
         self, payload: dict, instruction_id: Optional[str] = None
-    ) -> None:
+    ) -> Instruction:
         """
         Creates a new instruction in the backend with the specified payload and instruction ID.
 
@@ -55,12 +55,12 @@ class Service:
           If not provided, a unique ID will be generated.
 
         Returns:
-        - None
+        - Instruction: the created Instruction object.
         """
         instruction = Instruction(instruction_id=instruction_id, payload=payload)
-        self.backend.put_contents(instruction=instruction)
+        return self.backend.put_contents(instruction=instruction)
 
-    def update_instruction(self, instruction_id: str, payload: dict) -> None:
+    def update_instruction(self, instruction_id: str, payload: dict) -> Instruction:
         """
         Updates an existing instruction in the backend with the specified payload.
 
@@ -69,10 +69,10 @@ class Service:
         - payload (dict): The updated payload of the instruction.
 
         Returns:
-        - None
+        - Instruction: the updated Instruction object.
         """
         instruction = Instruction(instruction_id=instruction_id, payload=payload)
-        self.backend.put_contents(instruction=instruction)
+        return self.backend.put_contents(instruction=instruction)
 
     def delete_instruction(self, instruction_id: str) -> None:
         """

@@ -91,14 +91,14 @@ class FileSystemBackend(Backend):
     A class representing a file system backend.
 
     Parameters:
-        file_extension (SupportedFileExtensions): The supported file extension for the backend.
-        root_directory (Optional[Union[str, Path]], optional): The root directory for the backend. Defaults to Path().
+    - file_extension (SupportedFileExtensions): The supported file extension for the backend.
+    - root_directory (Optional[Union[str, Path]], optional): The root directory for the backend. Defaults to Path().
 
     Raises:
-        FileNotFoundError: If the root directory does not exist.
+    - FileNotFoundError: If the root directory does not exist.
 
     Attributes:
-        root_directory (Path): The root directory for the backend.
+    - root_directory (Path): The root directory for the backend.
     """
 
     def __init__(
@@ -110,8 +110,8 @@ class FileSystemBackend(Backend):
         Initializes the FileSystemBackend.
 
         Parameters:
-            file_extension (SupportedFileExtensions): The supported file extension for the backend.
-            root_directory (Optional[Union[str, Path]], optional): The root directory for the backend. Defaults to Path().
+        - file_extension (SupportedFileExtensions): The supported file extension for the backend.
+        - root_directory (Optional[Union[str, Path]], optional): The root directory for the backend. Defaults to Path().
         """
         self.root_directory = Path(root_directory)
         if not self.root_directory.exists:
@@ -125,58 +125,69 @@ class FileSystemBackend(Backend):
         Returns the path for a given instruction ID.
 
         Parameters:
-            instruction_id (str): The ID of the instruction.
+        - instruction_id (str): The ID of the instruction.
 
         Returns:
-            Path: The path to the instruction file.
+        - Path: The path to the instruction file.
         """
         return Path(
             self.root_directory, f"{instruction_id}.{self.file_extension.value}"
         )
 
-    def get_contents(self, instruction_id: str) -> dict:
+    def get_contents(self, instruction_id: str) -> Instruction:
         """
         Retrieves the contents of an instruction.
 
         Parameters:
-            instruction_id (str): The ID of the instruction.
+        - instruction_id (str): The ID of the instruction.
+
+        Raises:
+        - FileNotFoundError: If file not found given instruction_id.
 
         Returns:
-            dict: The contents of the instruction.
+        - Instruction: The instruction object given instruction_id.
         """
         path = self._get_path(instruction_id=instruction_id)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"instruction_id ({instruction_id}) not found in backend."
+            )
         with open(path) as f:
-            return self.load(f)
+            payload = self.load(f)
+        return Instruction(instruction_id=instruction_id, payload=payload)
 
     def put_contents(
         self,
         instruction: Optional[Instruction] = None,
         instruction_id: Optional[str] = None,
         payload: Optional[dict] = None,
-    ) -> None:
+    ) -> Instruction:
         """
         Puts the contents of an instruction into a file.
 
         Parameters:
-            instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
-            instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
-            payload (Optional[dict], optional): The payload of the instruction. Defaults to None.
+        - instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
+        - instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
+        - payload (Optional[dict], optional): The payload of the instruction. Defaults to None.
 
         Raises:
-            ValueError: If either instruction or instruction_id is not provided.
+        - ValueError: If either instruction or instruction_id is not provided.
 
         Returns:
-            None
+        - Instruction: The instruction object given instruction_id.
         """
         if instruction is None and instruction_id is None:
             raise ValueError("Need either instruction_id or instruction to identify.")
         instruction_id = instruction_id or instruction.instruction_id
         payload = payload or instruction
+        if instruction is None:
+            instruction = Instruction(instruction_id=instruction_id, payload=payload)
         path = self._get_path(instruction_id=instruction_id)
         if path.exists():
             os.remove(path)
         with open(path, "w") as f:
             self.dump(payload, f)
+        return instruction
 
     def delete_contents(
         self,
@@ -187,18 +198,15 @@ class FileSystemBackend(Backend):
         Deletes the contents of an instruction.
 
         Parameters:
-            instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
-            instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
+        - instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
+        - instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
 
         Raises:
-            ValueError: If either instruction or instruction_id is not provided.
-
-        Returns:
-            None
+        - ValueError: If either instruction or instruction_id is not provided.
         """
         if instruction is None and instruction_id is None:
             raise ValueError("Need either instruction_id or instruction to identify.")
         instruction_id = instruction_id or instruction.instruction_id
         path = self._get_path(instruction_id=instruction_id)
-        if path.exists:
+        if path.exists():
             os.remove(path)
