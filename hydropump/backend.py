@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 import yaml
 
-from .instruction import Instruction
+from .instruction import Instruction, Template
 
 
 class InstructionType(Enum):
@@ -55,6 +55,28 @@ class Backend(ABC):
         self.file_extension = SupportedFileExtensions(file_extension)
         self.set_dump_load()
 
+    def _compile(self, parent: dict, child: dict, output: dict = None) -> dict:
+        if output is None:
+            output = child
+        for k, v in parent.items():
+            if isinstance(v, (str, int, float, bool)):
+                output[k] = v
+            elif isinstance(v, list):
+                output[k] = output.get(k, []) + v
+            elif isinstance(v, dict):
+                output[k] = self._compile(v, child.get(k, {}), output.get())
+        return output
+
+    def compile_instruction(self, instruction: Instruction) -> Instruction:
+        """TODO: implement secrets/variables"""
+        for template_id in instruction.metadata.get("templates", []):
+            template_instruction = self.get_template(template_id)
+            instruction.source = self._compile(
+                instruction.source, template_instruction["template"]
+            )
+        instruction.set_source()
+        return instruction
+
     def set_dump_load(self):
         """
         Set the appropriate load and dump functions based on the file extension.
@@ -70,30 +92,9 @@ class Backend(ABC):
             self.dump = yaml.safe_dump
 
     @abstractmethod
-    def get_template(self) -> None:
+    def delete_base(self) -> None:
         """
-        Abstract method to get the template from the backend.
-        """
-        pass
-
-    @abstractmethod
-    def get_base(self) -> None:
-        """
-        Abstract method to get the base from the backend.
-        """
-        pass
-
-    @abstractmethod
-    def put_template(self) -> None:
-        """
-        Abstract method to put the template into the backend.
-        """
-        pass
-
-    @abstractmethod
-    def put_base(self) -> None:
-        """
-        Abstract method to put the base into the backend.
+        Abstract method to delete the base from the backend.
         """
         pass
 
@@ -105,9 +106,30 @@ class Backend(ABC):
         pass
 
     @abstractmethod
-    def delete_base(self) -> None:
+    def get_base(self) -> None:
         """
-        Abstract method to delete the base from the backend.
+        Abstract method to get the base from the backend.
+        """
+        pass
+
+    @abstractmethod
+    def get_template(self) -> None:
+        """
+        Abstract method to get the template from the backend.
+        """
+        pass
+
+    @abstractmethod
+    def put_base(self) -> None:
+        """
+        Abstract method to put the base into the backend.
+        """
+        pass
+
+    @abstractmethod
+    def put_template(self) -> None:
+        """
+        Abstract method to put the template into the backend.
         """
         pass
 
@@ -173,12 +195,17 @@ class FileSystemBackend(Backend):
             f"{identifier}.{self.file_extension.value}",
         )
 
-    def get_template(self, template_id: str) -> dict:
+    def get_template(self, template_id: str) -> Template:
         path = self._get_path(identifier=template_id, object_type="template")
         if not path.exists():
             raise FileNotFoundError(f"template ({template_id}) not found in backend.")
         with open(path) as f:
-            return self.load(f)
+            payload = self.load(f)
+        return Template(
+            metadata=payload.get("metadata", {}),
+            source=payload.get("template", {}),
+            template_id=template_id,
+        )
 
     def get_base(self, instruction_id: str) -> Instruction:
         """
@@ -201,19 +228,31 @@ class FileSystemBackend(Backend):
         return Instruction(
             instruction_id=instruction_id,
             metadata=payload.get("metadata", {}),
-            source=payload.get("rawSource", {}),
+            source=payload.get("instruction", {}),
         )
 
     def put_template(
         self,
-        payload: dict,
-        template_id: str,
+        template: Optional[Template] = None,
+        template_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+        source: Optional[dict] = None,
     ) -> None:
+        if template is None and template_id is None:
+            raise ValueError("Need either template_id or template to identify.")
+        template_id = template_id or template.template_id
+        source = source or template.source
+        metadata = metadata or template.metadata
+        if template is None:
+            template = Template(
+                template_id=template_id, metadata=metadata, source=source
+            )
         path = self._get_path(identifier=template_id, object_type="template")
         if path.exists():
             os.remove(path)
         with open(path, "w") as f:
-            self.dump(payload, f)
+            self.dump(template, f)
+        return template
 
     def put_base(
         self,

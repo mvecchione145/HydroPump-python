@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Optional, Union
 
 from .backend import Backend, FileSystemBackend
-from .instruction import Instruction
+from .instruction import Instruction, Template
 
 
 class Service:
@@ -14,7 +15,10 @@ class Service:
     """
 
     def __init__(
-        self, backend: Optional[Backend] = None, backend_config: dict = None
+        self,
+        backend: Optional[Backend] = None,
+        backend_config: Optional[dict] = None,
+        debug: Optional[bool] = False,
     ) -> None:
         """
         Initializes a new instance of the Service class.
@@ -22,27 +26,47 @@ class Service:
         Parameters:
         - backend (Optional[Backend]): An optional parameter specifying the backend to use.
           If not provided, a default FileSystemBackend instance will be used.
+        - backend_config (Optional[dict]): TODO
+        - debug (Optional[bool]): TODO
 
         Raises:
         - ValueError: If the provided backend is not of type Backend.
         """
         self.backend = backend
+        self.debug = debug
         if self.backend is None and backend_config is None:
             self.backend = FileSystemBackend()
         if not isinstance(self.backend, Backend):
             raise ValueError("Backend is not of type Backend.")
 
-    def get_instruction(self, instruction_id: str) -> Instruction:
+    def get_instruction(
+        self, instruction_id: str, compile: Optional[bool] = True
+    ) -> Instruction:
         """
         Retrieves an instruction from the backend based on the given instruction ID.
 
         Parameters:
         - instruction_id (str): The ID of the instruction to retrieve.
+        - compile (Optional[bool]): TODO
 
         Returns:
         - Instruction: An Instruction object representing the retrieved instruction.
         """
-        return self.backend.get_base(instruction_id=instruction_id)
+        instruction = self.backend.get_base(instruction_id=instruction_id)
+        if not self.debug and compile:
+            instruction = self.backend.compile_instruction(instruction)
+        return instruction
+
+    def get_template(self, template_id: str) -> Template:
+        return self.backend.get_template(template_id=template_id)
+
+    def create_template(
+        self, metadata: dict, source: dict, template_id: Optional[str]
+    ) -> str:
+        metadata.update({"createdAt": str(datetime.now())})
+        return self.backend.put_template(
+            metadata=metadata, source=source, template_id=template_id
+        )
 
     def create_instruction(
         self, metadata: dict, source: dict, instruction_id: Optional[str] = None
@@ -58,10 +82,21 @@ class Service:
         Returns:
         - Instruction: the created Instruction object.
         """
+        metadata.update({"createdAt": str(datetime.now())})
         instruction = Instruction(
             instruction_id=instruction_id, metadata=metadata, source=source
         )
         return self.backend.put_base(instruction=instruction)
+
+    def update_template(
+        self,
+        template_id: str,
+        metadata: Optional[dict] = None,
+        source: Optional[dict] = None,
+    ) -> str:
+        template = self.backend.get_template(template_id=template_id)
+        template.update_template(metadata=metadata, source=source)
+        return self.backend.put_template(template=template)
 
     def update_instruction(
         self,
@@ -82,6 +117,9 @@ class Service:
         instruction = self.backend.get_base(instruction_id=instruction_id)
         instruction.update_instruction(metadata=metadata, source=source)
         return self.backend.put_base(instruction=instruction)
+
+    def delete_template(self, template_id: str) -> None:
+        self.backend.delete_template(template_id=template_id)
 
     def delete_instruction(self, instruction_id: str) -> None:
         """
