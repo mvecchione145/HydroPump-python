@@ -19,80 +19,67 @@ To use HydroPump, you need to import the `hydropump` module:
 import hydropump
 ```
 
-### Backend Configuration
-
-HydroPump supports different backends for storing configuration data. Currently, it supports file system backends with JSON and YAML file formats.
-
-To configure a file system backend, you can create an instance of the `FileSystemBackend` class and specify the file extension:
-
-```python
-backend = hydropump.FileSystemBackend(file_extension="json")  # or "yaml"
-```
-
-Optionally you can specify the root directory in which to store the instruction files.
-
-```python
-backend = hydropump.FileSystemBackend(file_extension="json", root_directory="path/to/dir")
-```
-
-### Service Initialization
-
-Once you have configured the backend, you can create a `Service` instance by passing the backend as a parameter:
-
-```python
-service = hydropump.Service(backend=backend)
-```
-
-Service will be the interfacing object for accessing, creating, deleting and editing instruction files.
-
-### Creating Instructions
-
-To create an instruction, you need to provide an instruction ID and a payload (configuration data) in the form of a dictionary. The instruction ID should be unique for each instruction.
-
-```python
-# instruction_id is optional if left blank a UUID will be generated
-instruction_id = "client-12345"
-payload = {
-    "system": "darwin",
-    "date_created": "2023-07-09 11:18:23.001"
-}
-
-service.create_instruction(instruction_id=instruction_id, payload=payload)
-```
-
-This will create a JSON file (or YAML file if configured) with the given payload.
-
-### Retrieving Instructions
-
-To retrieve an instruction, you can use the `get_instruction` method and provide the instruction ID:
-
-```python
-returned_payload = service.get_instruction(instruction_id=instruction_id)
-```
-
-This will return the payload (configuration data) associated with the given instruction ID.
-
 ### Example
 
 Here's a complete example that demonstrates the usage of HydroPump:
 
 ```python
-import hydropump
+from hydropump import Service
 
-backend = hydropump.FileSystemBackend(file_extension="json")
-service = hydropump.Service(backend=backend)
-
-instruction_id = "client-12345"
-payload = {
-    "system": "darwin",
-    "date_created": "2023-07-09 11:18:23.001"
+service_config = {
+    "backend_type": "FileSystem",
+    "file_extension": "json",
 }
 
-service.create_instruction(instruction_id=instruction_id, payload=payload)
+service = Service(config=service_config)
 
-returned_payload = service.get_instruction(instruction_id=instruction_id)
+template_id1 = "example_template1"
+template1 = {
+    "sqlEngine": "mysql"
+}
+service.create_template(metadata={}, source=template1, template_id=template_id1)
+
+template_id2 = "example_template2"
+template2 = {
+    "sqlEngine": "postgres"
+    "cloudProvider": "AWS"
+}
+service.create_template(metadata={}, source=template2, template_id=template_id2)
+
+instruction_id = "client-12345"
+metadata = {
+    "createdBy": "mvecchione145",
+
+    # templates are compiled from left to right
+    # (common keys in example_template1 will be
+    # overridden by values in example_template2)
+    "templates": ["example_template1", "example_template2"]
+}
+source = {
+    "system": "darwin"
+}
+
+service.create_instruction(
+    instruction_id=instruction_id,
+    metadata=metadata,
+    source=source)
+
+instruction = service.get_instruction(instruction_id=instruction_id)
 
 print(returned_payload)
+# {
+#   "instruction": {
+#     "cloudProvider": "AWS",
+#     "sqlEngine": "postgres",
+#     "system": "darwin"
+#   },
+#   "metadata": {
+#     "createdBy": "mvecchione145",
+#     "templates": [
+#       "example_template",
+#       "example_template2"
+#     ]
+#   }
 ```
 
 ## Contributing

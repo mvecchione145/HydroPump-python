@@ -60,7 +60,7 @@ class Backend(ABC):
             elif isinstance(v, list):
                 output[k] = output.get(k, []) + v
             elif isinstance(v, dict):
-                output[k] = self._compile(v, child.get(k, {}), output.get())
+                output[k] = self._compile(v, child.get(k, {}), output.get(k, {}))
         return output
 
     def compile_instruction(self, instruction: Instruction) -> Instruction:
@@ -73,11 +73,11 @@ class Backend(ABC):
         Returns:
             Instruction: The compiled instruction.
         """
+        template = {}
         for template_id in instruction.metadata.get("templates", []):
             template_instruction = self.get_template(template_id)
-            instruction.source = self._compile(
-                instruction.source, template_instruction["template"]
-            )
+            template = self._compile(template_instruction["template"], template)
+        instruction.source = self._compile(instruction.source, template)
         instruction.set_source()
         return instruction
 

@@ -29,7 +29,7 @@ def test_create_instruction(
         metadata=test_metadata,
         source=test_source,
     )
-    instruction = test_service.get_instruction(test_instruction_id)
+    instruction = test_service.get_instruction(instruction_id=test_instruction_id)
     assert instruction == expected_compiled_result
 
 

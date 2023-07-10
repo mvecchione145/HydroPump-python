@@ -73,8 +73,8 @@ class Service:
             NotImplementedError: If debug mode is not enabled and compilation is requested.
         """
         instruction = self.backend.get_base(instruction_id=instruction_id)
-        if not self.debug and compile:
-            raise NotImplementedError("Compilation is not supported in non-debug mode.")
+        if compile:
+            instruction = self.backend.compile_instruction(instruction=instruction)
         return instruction
 
     def get_template(self, template_id: str) -> Template:
