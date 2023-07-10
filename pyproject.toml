@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hydropump"
-version = "0.1.0"
+version = "0.1.1"
 description = "Configuration Management Library"
 authors = ["Michael Vecchione <51305946+mvecchione145@users.noreply.github.com>"]
 license = "MIT"
@@ -26,8 +26,8 @@ build-backend = "poetry.core.masonry.api"
 
 
 [project.urls]
-"Homepage" = "https://github.com/mvecchione145/HydroPump-python"
-"Bug Tracker" = "https://github.com/mvecchione145/HydroPump-python/issues"
+homepage = "https://github.com/mvecchione145/HydroPump-python"
+bugtracker = "https://github.com/mvecchione145/HydroPump-python/issues"
 
 
 [tool.pytest]
