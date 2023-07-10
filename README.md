@@ -34,39 +34,33 @@ service_config = {
 service = Service(config=service_config)
 
 template_id1 = "example_template1"
-template1 = {
-    "sqlEngine": "mysql"
-}
+template1 = {"sqlEngine": "mysql"}
 service.create_template(metadata={}, source=template1, template_id=template_id1)
 
 template_id2 = "example_template2"
 template2 = {
-    "sqlEngine": "postgres"
-    "cloudProvider": "AWS"
+    "sqlEngine": "postgres",
+    "cloudProvider": "AWS",
 }
 service.create_template(metadata={}, source=template2, template_id=template_id2)
 
 instruction_id = "client-12345"
 metadata = {
     "createdBy": "mvecchione145",
-
     # templates are compiled from left to right
     # (common keys in example_template1 will be
     # overridden by values in example_template2)
-    "templates": ["example_template1", "example_template2"]
+    "templates": ["example_template1", "example_template2"],
 }
-source = {
-    "system": "darwin"
-}
+source = {"system": "darwin"}
 
 service.create_instruction(
-    instruction_id=instruction_id,
-    metadata=metadata,
-    source=source)
+    instruction_id=instruction_id, metadata=metadata, source=source
+)
 
 instruction = service.get_instruction(instruction_id=instruction_id)
 
-print(returned_payload)
+print(instruction)
 # {
 #   "instruction": {
 #     "cloudProvider": "AWS",
@@ -74,7 +68,9 @@ print(returned_payload)
 #     "system": "darwin"
 #   },
 #   "metadata": {
+#     "compiled": True,
 #     "createdBy": "mvecchione145",
+#     "createdAt": "YYYY-MM-DD HH:MM:SS.NNNNNN"
 #     "templates": [
 #       "example_template",
 #       "example_template2"

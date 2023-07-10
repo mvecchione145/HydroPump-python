@@ -78,6 +78,7 @@ class Backend(ABC):
             template_instruction = self.get_template(template_id)
             template = self._compile(template_instruction["template"], template)
         instruction.source = self._compile(instruction.source, template)
+        instruction.metadata["compiled"] = True
         instruction.set_source()
         return instruction
 
