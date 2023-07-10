@@ -1,5 +1,3 @@
-[![Contributor Covenant](https://img.shields.io/badge/Contributor)]
-
 # HydroPump-python
 Configuration Management Library
 
