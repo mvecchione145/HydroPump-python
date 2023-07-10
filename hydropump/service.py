@@ -33,6 +33,7 @@ class Service:
         if not isinstance(self.backend, Backend):
             raise ValueError("Backend is not of type Backend.")
 
+    @staticmethod
     def _set_backend(config: dict) -> Backend:
         """
         Set the backend based on the provided configuration.
