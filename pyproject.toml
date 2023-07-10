@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hydropump"
-version = "0.1.2"
+version = "0.1.4"
 description = "Configuration Management Library"
 authors = ["Michael Vecchione <51305946+mvecchione145@users.noreply.github.com>"]
 license = "MIT"
