@@ -16,46 +16,42 @@ class InstructionType(Enum):
 
 
 class SupportedFileExtensions(Enum):
-    """
-    An enumeration representing supported file extensions.
-
-    Attributes:
-    - json (str): The file extension for JSON files.
-    - yaml (str): The file extension for YAML files (also known as YML).
-    """
-
     json = "json"
-    # xml = "xml"
     yaml = "yaml"
     yml = "yaml"
 
 
 class Backend(ABC):
     """
-    Abstract base class representing a backend.
-
-    Attributes:
-    - backend_type (str): The type of the backend.
-    - file_extension (SupportedFileExtensions): The supported file extension for the backend.
-    - load (function): The function used to load data from the backend.
-    - dump (function): The function used to dump data into the backend.
+    Abstract base class for different backends.
     """
 
     def __init__(
         self, backend_type: str, file_extension: SupportedFileExtensions
     ) -> None:
         """
-        Initialize the Backend instance.
+        Initialize the backend.
 
-        Parameters:
-        - backend_type (str): The type of the backend.
-        - file_extension (SupportedFileExtensions): The supported file extension for the backend.
+        Args:
+            backend_type (str): The type of the backend.
+            file_extension (SupportedFileExtensions): The supported file extension.
         """
         self.backend_type = backend_type
         self.file_extension = SupportedFileExtensions(file_extension)
         self.set_dump_load()
 
     def _compile(self, parent: dict, child: dict, output: dict = None) -> dict:
+        """
+        Recursively compile the parent and child dictionaries.
+
+        Args:
+            parent (dict): The parent dictionary.
+            child (dict): The child dictionary.
+            output (dict, optional): The output dictionary. Defaults to None.
+
+        Returns:
+            dict: The compiled dictionary.
+        """
         if output is None:
             output = child
         for k, v in parent.items():
@@ -68,7 +64,15 @@ class Backend(ABC):
         return output
 
     def compile_instruction(self, instruction: Instruction) -> Instruction:
-        """TODO: implement secrets/variables"""
+        """
+        Compile the instruction by applying templates.
+
+        Args:
+            instruction (Instruction): The instruction object.
+
+        Returns:
+            Instruction: The compiled instruction.
+        """
         for template_id in instruction.metadata.get("templates", []):
             template_instruction = self.get_template(template_id)
             instruction.source = self._compile(
@@ -79,7 +83,7 @@ class Backend(ABC):
 
     def set_dump_load(self):
         """
-        Set the appropriate load and dump functions based on the file extension.
+        Set the dump and load functions based on the file extension.
         """
         if self.file_extension == SupportedFileExtensions.json:
             self.load = json.load
@@ -94,59 +98,49 @@ class Backend(ABC):
     @abstractmethod
     def delete_base(self) -> None:
         """
-        Abstract method to delete the base from the backend.
+        Abstract method to delete base.
         """
         pass
 
     @abstractmethod
     def delete_template(self) -> None:
         """
-        Abstract method to delete the template from the backend.
+        Abstract method to delete template.
         """
         pass
 
     @abstractmethod
     def get_base(self) -> None:
         """
-        Abstract method to get the base from the backend.
+        Abstract method to get base.
         """
         pass
 
     @abstractmethod
     def get_template(self) -> None:
         """
-        Abstract method to get the template from the backend.
+        Abstract method to get template.
         """
         pass
 
     @abstractmethod
     def put_base(self) -> None:
         """
-        Abstract method to put the base into the backend.
+        Abstract method to put base.
         """
         pass
 
     @abstractmethod
     def put_template(self) -> None:
         """
-        Abstract method to put the template into the backend.
+        Abstract method to put template.
         """
         pass
 
 
 class FileSystemBackend(Backend):
     """
-    A class representing a file system backend.
-
-    Parameters:
-    - file_extension (SupportedFileExtensions): The supported file extension for the backend.
-    - root_directory (Optional[Union[str, Path]], optional): The root directory for the backend. Defaults to Path().
-
-    Raises:
-    - FileNotFoundError: If the root directory does not exist.
-
-    Attributes:
-    - root_directory (Path): The root directory for the backend.
+    Backend implementation for file system storage.
     """
 
     def __init__(
@@ -155,11 +149,11 @@ class FileSystemBackend(Backend):
         root_directory: Optional[Union[str, Path]] = Path(),
     ) -> None:
         """
-        Initializes the FileSystemBackend.
+        Initialize the file system backend.
 
-        Parameters:
-        - file_extension (SupportedFileExtensions): The supported file extension for the backend.
-        - root_directory (Optional[Union[str, Path]], optional): The root directory for the backend. Defaults to Path().
+        Args:
+            file_extension (SupportedFileExtensions): The supported file extension.
+            root_directory (Optional[Union[str, Path]], optional): The root directory. Defaults to Path().
         """
         self.root_directory = Path(root_directory)
         if not self.root_directory.exists:
@@ -170,6 +164,9 @@ class FileSystemBackend(Backend):
         self._set_sub_directories()
 
     def _set_sub_directories(self):
+        """
+        Create base and template sub-directories if they don't exist.
+        """
         base_path = Path(self.root_directory, "base")
         template_path = Path(self.root_directory, "template")
         if not base_path.exists():
@@ -179,14 +176,14 @@ class FileSystemBackend(Backend):
 
     def _get_path(self, identifier: str, object_type: InstructionType) -> Path:
         """
-        Returns the path for a given identifier.
+        Get the path for the given identifier and object type.
 
-        Parameters:
-        - instruction_id (str): The ID of the instruction.
-        - object_type (InstructionType): Will generate a prefix based on object_type.
+        Args:
+            identifier (str): The identifier.
+            object_type (InstructionType): The object type.
 
         Returns:
-        - Path: The path to the instruction file.
+            Path: The path.
         """
         object_type = InstructionType(object_type)
         return Path(
@@ -196,6 +193,15 @@ class FileSystemBackend(Backend):
         )
 
     def get_template(self, template_id: str) -> Template:
+        """
+        Get the template with the given template ID.
+
+        Args:
+            template_id (str): The template ID.
+
+        Returns:
+            Template: The template object.
+        """
         path = self._get_path(identifier=template_id, object_type="template")
         if not path.exists():
             raise FileNotFoundError(f"template ({template_id}) not found in backend.")
@@ -209,16 +215,13 @@ class FileSystemBackend(Backend):
 
     def get_base(self, instruction_id: str) -> Instruction:
         """
-        Retrieves the contents of an instruction.
+        Get the base with the given instruction ID.
 
-        Parameters:
-        - instruction_id (str): The ID of the instruction.
-
-        Raises:
-        - FileNotFoundError: If file not found given instruction_id.
+        Args:
+            instruction_id (str): The instruction ID.
 
         Returns:
-        - Instruction: The instruction object given instruction_id.
+            Instruction: The base instruction object.
         """
         path = self._get_path(identifier=instruction_id, object_type="base")
         if not path.exists():
@@ -238,6 +241,18 @@ class FileSystemBackend(Backend):
         metadata: Optional[dict] = None,
         source: Optional[dict] = None,
     ) -> None:
+        """
+        Put the template into the backend.
+
+        Args:
+            template (Optional[Template], optional): The template object. Defaults to None.
+            template_id (Optional[str], optional): The template ID. Defaults to None.
+            metadata (Optional[dict], optional): The template metadata. Defaults to None.
+            source (Optional[dict], optional): The template source. Defaults to None.
+
+        Returns:
+            None
+        """
         if template is None and template_id is None:
             raise ValueError("Need either template_id or template to identify.")
         template_id = template_id or template.template_id
@@ -262,19 +277,16 @@ class FileSystemBackend(Backend):
         source: Optional[dict] = None,
     ) -> Instruction:
         """
-        Puts the contents of an instruction into a file.
+        Put the base instruction into the backend.
 
-        Parameters:
-        - instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
-        - instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
-        - metadata (Optional[dict], optional): The metadata of the instruction. Defaults to None.
-        - source (Optional[dict], optional): The payload of the instruction. Defaults to None.
-
-        Raises:
-        - ValueError: If either instruction or instruction_id is not provided.
+        Args:
+            instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
+            instruction_id (Optional[str], optional): The instruction ID. Defaults to None.
+            metadata (Optional[dict], optional): The instruction metadata. Defaults to None.
+            source (Optional[dict], optional): The instruction source. Defaults to None.
 
         Returns:
-        - Instruction: The instruction object given instruction_id.
+            Instruction: The base instruction object.
         """
         if instruction is None and instruction_id is None:
             raise ValueError("Need either instruction_id or instruction to identify.")
@@ -294,8 +306,19 @@ class FileSystemBackend(Backend):
 
     def delete_template(
         self,
-        template_id: str,
+        template: Optional[str] = None,
+        template_id: Optional[str] = None,
     ) -> None:
+        """
+        Delete the template.
+
+        Args:
+            template (Optional[Template], optional): The template object. Defaults to None.
+            template_id (Optional[str], optional): The template ID. Defaults to None.
+        """
+        if template is None and template_id is None:
+            raise ValueError("Need either instruction_id or instruction to identify.")
+        template_id = template_id or template.template_id
         path = self._get_path(identifier=template_id, object_type="template")
         if path.exists():
             os.remove(path)
@@ -306,14 +329,11 @@ class FileSystemBackend(Backend):
         instruction_id: Optional[str] = None,
     ) -> None:
         """
-        Deletes the contents of an instruction.
+        Delete the base instruction.
 
-        Parameters:
-        - instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
-        - instruction_id (Optional[str], optional): The ID of the instruction. Defaults to None.
-
-        Raises:
-        - ValueError: If either instruction or instruction_id is not provided.
+        Args:
+            instruction (Optional[Instruction], optional): The instruction object. Defaults to None.
+            instruction_id (Optional[str], optional): The instruction ID. Defaults to None.
         """
         if instruction is None and instruction_id is None:
             raise ValueError("Need either instruction_id or instruction to identify.")
