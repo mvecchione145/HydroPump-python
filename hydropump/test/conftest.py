@@ -58,6 +58,7 @@ def test_template(test_user):
 
 @pytest.fixture(scope="session")
 def expected_compiled_result(test_metadata, test_source, test_template):
+    # test_metadata.update({"compiled": True})
     return {
         "instruction": {**test_source, **test_template},
         "metadata": test_metadata,
